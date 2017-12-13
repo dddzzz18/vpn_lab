@@ -373,6 +373,9 @@ int main(int argc, char *argv[]) {
       /* Add a NULL terminator. We are expecting printable text */
       //decryptedtext[decryptedtext_len] = '\0';
 
+      /* Show the decrypted text */
+      do_debug("Decrypted text is:\n");
+      do_debug("%s\n", decryptedtext);
 
       /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */ 
       nwrite = cwrite(tap_fd, decryptedtext, decryptedtext_len);
