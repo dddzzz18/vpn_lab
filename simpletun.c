@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
       ciphertext_len = encrypt (buffer, strlen ((char *)buffer), key, iv,
                                 ciphertext);
       do_debug("PLAINTEXT: %s", buffer);
-      do_debug("CYPHERTEXT: ", ciphertext);
+      do_debug("CYPHERTEXT: ");
       BIO_dump_fp (stdout, (const char *)ciphertext, ciphertext_len);
 
 
@@ -371,11 +371,11 @@ int main(int argc, char *argv[]) {
         decryptedtext);
 
       /* Add a NULL terminator. We are expecting printable text */
-      decryptedtext[decryptedtext_len] = '\0';
+      //decryptedtext[decryptedtext_len] = '\0';
 
 
       /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */ 
-      nwrite = cwrite(tap_fd, buffer, nread);
+      nwrite = cwrite(tap_fd, decryptedtext, decryptedtext_len);
       do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
     }
   }
