@@ -42,7 +42,8 @@
 #include "encrypt.h"
 
 /* buffer for reading from tun/tap interface, must be >= 1500 */
-#define BUFSIZE 2000   
+#define BUFSIZE 2000
+#define CIPHERSIZE 3000   
 #define CLIENT 0
 #define SERVER 1
 #define PORT 55555
@@ -317,15 +318,16 @@ int main(int argc, char *argv[]) {
        * ciphertext which may be longer than the plaintext, dependant on the
        * algorithm and mode
        */
-      unsigned char ciphertext[128];
+      unsigned char ciphertext[CIPHERSIZE]; // why not?
       int ciphertext_len;
 
       /* Encrypt the plaintext */
-      ciphertext_len = encrypt (buffer, strlen ((char *)buffer), key, iv,
+      ciphertext_len = encrypt (buffer, nread, key, iv,
                                 ciphertext);
-      do_debug("PLAINTEXT: %s", buffer);
-      do_debug("CYPHERTEXT: ");
-      BIO_dump_fp (stdout, (const char *)ciphertext, ciphertext_len);
+      do_debug("PLAINTEXT: \n");
+      BIO_dump_fp (stdout, buffer, nread);
+      do_debug("CYPHERTEXT: \n");
+      BIO_dump_fp (stdout, ciphertext, ciphertext_len);
 
 
       /* write length + packet */
@@ -346,7 +348,10 @@ int main(int argc, char *argv[]) {
       struct sockaddr_in from;
       int fromLength = sizeof( from );
 
-      if (( nread = recvfrom( sock_fd, buffer, BUFSIZE, 0, (struct sockaddr*)&from, &fromLength)) < 0){
+      unsigned char ciphertext[CIPHERSIZE]; // why not?
+      int ciphertext_len;
+
+      if (( nread = recvfrom( sock_fd, ciphertext, CIPHERSIZE, 0, (struct sockaddr*)&from, &fromLength)) < 0){
         perror("recvfrom()");
         exit(1);
       }
@@ -365,20 +370,18 @@ int main(int argc, char *argv[]) {
       do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
 
       /* DECRYPT the message */
-      unsigned char decryptedtext[128];
-      int decryptedtext_len;
-      decryptedtext_len = decrypt(buffer, nread, key, iv,
-        decryptedtext);
-
-      /* Add a NULL terminator. We are expecting printable text */
-      //decryptedtext[decryptedtext_len] = '\0';
+      int plaintext_len;
+      plaintext_len = decrypt(ciphertext, nread, key, iv, buffer);
 
       /* Show the decrypted text */
-      do_debug("Decrypted text is:\n");
-      do_debug("%s\n", decryptedtext);
+      do_debug("CIPHERTEXT is:\n");
+      BIO_dump_fp (stdout, ciphertext, nread);
+
+      do_debug("PLAINTEXT is:\n");
+      BIO_dump_fp (stdout, buffer, plaintext_len);
 
       /* now buffer[] contains a full packet or frame, write it into the tun/tap interface */ 
-      nwrite = cwrite(tap_fd, decryptedtext, decryptedtext_len);
+      nwrite = cwrite(tap_fd, buffer, plaintext_len);
       do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
     }
   }
